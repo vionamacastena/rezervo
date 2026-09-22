@@ -3,40 +3,22 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Search, Users as UsersIcon, Mail, Phone, Building2,
-  UserCheck, UserX, Shield, MoreVertical, Trash2, KeyRound, Pencil,
-} from "lucide-react";
+import { Search } from "lucide-react";
 
 import { adminApi } from "@/lib/api/admin";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { MoreHorizontal } from "lucide-react";
 
-const ROLE_LABELS: Record<string, string> = {
+const ROLE_LABEL: Record<string, string> = {
   owner: "Owner",
   manager: "Menaxher",
   receptionist: "Recepsionist",
   accountant: "Kontabilist",
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  owner: "bg-orange-100 text-orange-700 border-orange-200",
-  manager: "bg-blue-100 text-blue-700 border-blue-200",
-  receptionist: "bg-purple-100 text-purple-700 border-purple-200",
-  accountant: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
 export default function AdminUsersPage() {
@@ -58,13 +40,11 @@ export default function AdminUsersPage() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
-      adminApi.updateUserStatus(id, status),
+    mutationFn: ({ id, status }: any) => adminApi.updateUserStatus(id, status),
     onSuccess: () => {
       toast.success("Statusi u përditësua");
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Gabim"),
   });
 
   const deleteMutation = useMutation({
@@ -77,20 +57,12 @@ export default function AdminUsersPage() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: ({ id, password }: { id: number; password: string }) =>
-      adminApi.resetUserPassword(id, password),
+    mutationFn: ({ id, password }: any) => adminApi.resetUserPassword(id, password),
     onSuccess: () => toast.success("Fjalëkalimi u rivendos"),
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Gabim"),
   });
 
-  const handleDelete = (u: any) => {
-    if (confirm(`Fshij përdoruesin "${u.name}"?`)) {
-      deleteMutation.mutate(u.id);
-    }
-  };
-
-  const handleResetPassword = (u: any) => {
-    const pwd = prompt(`Fjalëkalim i ri për ${u.name} (min. 8 karaktere):`);
+  const handleReset = (u: any) => {
+    const pwd = prompt(`Fjalëkalim i ri për ${u.name}:`);
     if (pwd && pwd.length >= 8) {
       resetPasswordMutation.mutate({ id: u.id, password: pwd });
     } else if (pwd) {
@@ -100,135 +72,119 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Përdoruesit</h1>
-        <p className="text-slate-500 mt-1">
-          Të gjithë përdoruesit në platformë (përveç Super Admin)
+        <h1 className="text-2xl font-semibold text-slate-900">Përdoruesit</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Të gjithë përdoruesit në platformë
         </p>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-3 flex-wrap mb-4">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Kërko emër, email, telefon..."
-                className="pl-10"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Të gjitha rolet</SelectItem>
-                <SelectItem value="owner">Owner</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="receptionist">Receptionist</SelectItem>
-                <SelectItem value="accountant">Accountant</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Të gjitha</SelectItem>
-                <SelectItem value="active">Aktiv</SelectItem>
-                <SelectItem value="inactive">Joaktiv</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Filters */}
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            placeholder="Kërko..."
+            className="pl-9 h-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="h-9 px-3 text-sm rounded-md border border-slate-200 bg-white text-slate-700 focus:outline-none"
+        >
+          <option value="all">Të gjitha rolet</option>
+          <option value="owner">Owner</option>
+          <option value="manager">Manager</option>
+          <option value="receptionist">Recepsionist</option>
+          <option value="accountant">Kontabilist</option>
+        </select>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="h-9 px-3 text-sm rounded-md border border-slate-200 bg-white text-slate-700 focus:outline-none"
+        >
+          <option value="all">Të gjitha</option>
+          <option value="active">Aktiv</option>
+          <option value="inactive">Joaktiv</option>
+        </select>
+      </div>
 
-          {isLoading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Emri</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Biznesi</TableHead>
-                  <TableHead>Roli</TableHead>
-                  <TableHead>Statusi</TableHead>
-                  <TableHead className="text-right">Veprime</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.data?.length ? data.data.map((u: any) => {
-                  const roleName = u.roles?.[0]?.name;
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-sm">{u.email}</TableCell>
-                      <TableCell>
-                        {u.tenant ? (
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-3 h-3 text-slate-400" />
-                            <span className="text-sm">{u.tenant.name}</span>
-                          </div>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {roleName && (
-                          <Badge variant="outline" className={ROLE_COLORS[roleName] ?? ""}>
-                            {ROLE_LABELS[roleName] ?? roleName}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={u.status === "active" ? "default" : "secondary"}>
-                          {u.status === "active" ? "Aktiv" : "Joaktiv"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-slate-100">
-                            <MoreVertical className="w-4 h-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => window.open(`/admin/users/${u.id}`, "_self")}>
-                              <Pencil className="w-4 h-4 mr-2" /> Ndrysho
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleResetPassword(u)}>
-                              <KeyRound className="w-4 h-4 mr-2" /> Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => statusMutation.mutate({
-                                id: u.id,
-                                status: u.status === "active" ? "inactive" : "active",
-                              })}
-                            >
-                              {u.status === "active"
-                                ? <><UserX className="w-4 h-4 mr-2" /> Çaktivizo</>
-                                : <><UserCheck className="w-4 h-4 mr-2" /> Aktivizo</>}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(u)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" /> Fshij
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                }) : (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-slate-500">
-                      <UsersIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                      Nuk ka përdorues
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Table */}
+      <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        ) : data?.data?.length ? (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-left">
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Emri</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Email</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Biznesi</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Roli</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Statusi</th>
+                <th className="w-12"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.data.map((u: any) => (
+                <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <td className="px-5 py-3 font-medium text-slate-900">{u.name}</td>
+                  <td className="px-5 py-3 text-slate-600">{u.email}</td>
+                  <td className="px-5 py-3 text-slate-600">{u.tenant?.name ?? "—"}</td>
+                  <td className="px-5 py-3 text-slate-600">
+                    {u.roles?.[0] ? (ROLE_LABEL[u.roles[0].name] ?? u.roles[0].name) : "—"}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                      <span className={`w-1.5 h-1.5 rounded-full ${u.status === "active" ? "bg-emerald-500" : "bg-slate-300"}`} />
+                      {u.status === "active" ? "Aktiv" : "Joaktiv"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="w-8 h-8 rounded-md hover:bg-slate-100 inline-flex items-center justify-center text-slate-500">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => handleReset(u)}>
+                          Reset fjalëkalimi
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            statusMutation.mutate({
+                              id: u.id,
+                              status: u.status === "active" ? "inactive" : "active",
+                            })
+                          }
+                        >
+                          {u.status === "active" ? "Çaktivizo" : "Aktivizo"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => confirm(`Fshij ${u.name}?`) && deleteMutation.mutate(u.id)}
+                          className="text-red-600"
+                        >
+                          Fshij
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="py-16 text-center text-sm text-slate-500">
+            Nuk ka përdorues
+          </div>
+        )}
+      </div>
     </div>
   );
 }

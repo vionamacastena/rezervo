@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AdminTenantController;
 use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Services\BusinessTemplates;
+use App\Http\Controllers\Api\NotificationController;
 
 Route::prefix('v1')->group(function () {
 
@@ -50,14 +51,14 @@ Route::prefix('v1')->group(function () {
             Route::post('users/{user}/reset-password', [AdminUserController::class, 'resetPassword']);
 
             // Templates list
-            Route::get('business-templates', fn () => response()->json(BusinessTemplates::list()));
+            Route::get('business-templates', fn() => response()->json(BusinessTemplates::list()));
         });
     });
 
     // ═══ Tenant-scoped ═══
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
 
-        Route::get('/health', fn () => response()->json([
+        Route::get('/health', fn() => response()->json([
             'status' => 'ok',
             'tenant_id' => app()->bound('tenant_id') ? app('tenant_id') : null,
         ]));
@@ -88,5 +89,11 @@ Route::prefix('v1')->group(function () {
             Route::get('staff-utilization', [ReportController::class, 'staffUtilization']);
             Route::get('inventory-status', [ReportController::class, 'inventoryStatus']);
         });
+        // ─── Notifications ───
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('notifications/{id}', [NotificationController::class, 'destroy']);
     });
 });

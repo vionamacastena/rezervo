@@ -7,11 +7,15 @@ use App\Models\Client;
 use App\Models\Reservation;
 use App\Models\Service;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Notifications\NewReservationNotification;
 use App\Services\AvailabilityService;
 use App\Services\ReservationCodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class PublicBookingController extends Controller
 {
@@ -99,17 +103,24 @@ class PublicBookingController extends Controller
         $startsAt = Carbon::parse($data['starts_at']);
         $endsAt = $startsAt->copy()->addMinutes($service->duration_minutes);
 
-        $slots = AvailabilityService::getSlots($tenant->id, $startsAt->format('Y-m-d'), $service);
-        $slot = collect($slots)->firstWhere('time', $startsAt->format('H:i'));
-
-        if (! $slot || ! $slot['available']) {
-            return response()->json([
-                'message' => 'Ky orar nuk është më i disponueshëm. Zgjidhni një tjetër.',
-            ], 409);
-        }
-
         DB::beginTransaction();
         try {
+            // ═══ ATOMIC LOCK: kontrollo konflikt brenda transaction ═══
+            $conflict = Reservation::withoutGlobalScopes()
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('status', ['tentative', 'confirmed'])
+                ->where('starts_at', '<', $endsAt)
+                ->where('ends_at', '>', $startsAt)
+                ->lockForUpdate()
+                ->first();
+
+            if ($conflict) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Ky orar sapo u zu nga një klient tjetër. Zgjidhni një orar tjetër.',
+                ], 409);
+            }
+
             $client = Client::withoutGlobalScopes()->firstOrCreate(
                 ['tenant_id' => $tenant->id, 'phone' => $data['phone']],
                 [
@@ -135,41 +146,61 @@ class PublicBookingController extends Controller
             ]);
 
             DB::commit();
-
-            return response()->json([
-                'message' => 'Termini u konfirmua me sukses!',
-                'reservation' => [
-                    'id' => $reservation->id,
-                    'code' => $reservation->code,
-                    'status' => $reservation->status,
-                    'starts_at' => $reservation->starts_at->toIso8601String(),
-                    'ends_at' => $reservation->ends_at->toIso8601String(),
-                    'service' => [
-                        'name' => $service->name,
-                        'duration_minutes' => $service->duration_minutes,
-                    ],
-                    'client' => [
-                        'full_name' => $client->full_name,
-                        'phone' => $client->phone,
-                        'email' => $client->email,
-                    ],
-                    'total_price' => (float) $reservation->total_price,
-                    'currency' => $reservation->currency,
-                ],
-                'tenant' => [
-                    'name' => $tenant->name,
-                    'phone' => $tenant->phone,
-                    'address' => $tenant->address,
-                ],
-            ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
-            report($e);
-
+            Log::error('Booking failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'message' => 'Gabim gjatë krijimit të rezervimit. Provoni përsëri.',
             ], 500);
         }
+
+        // ═══ NJOFTIM — JASHTË transaksionit, me try-catch ═══
+        try {
+            $staff = User::where('tenant_id', $tenant->id)
+                ->where('status', 'active')
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['owner', 'manager', 'receptionist']))
+                ->get();
+
+            if ($staff->isNotEmpty()) {
+                Notification::send($staff, new NewReservationNotification($reservation));
+            }
+        } catch (\Throwable $e) {
+            // Mos e prish booking-un nëse dështon njoftimi
+            Log::warning('Notification failed', [
+                'reservation_id' => $reservation->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Termini u konfirmua me sukses!',
+            'reservation' => [
+                'id' => $reservation->id,
+                'code' => $reservation->code,
+                'status' => $reservation->status,
+                'starts_at' => $reservation->starts_at->toIso8601String(),
+                'ends_at' => $reservation->ends_at->toIso8601String(),
+                'service' => [
+                    'name' => $service->name,
+                    'duration_minutes' => $service->duration_minutes,
+                ],
+                'client' => [
+                    'full_name' => $client->full_name,
+                    'phone' => $client->phone,
+                    'email' => $client->email,
+                ],
+                'total_price' => (float) $reservation->total_price,
+                'currency' => $reservation->currency,
+            ],
+            'tenant' => [
+                'name' => $tenant->name,
+                'phone' => $tenant->phone,
+                'address' => $tenant->address,
+            ],
+        ], 201);
     }
 
     private static function humanDuration(int $minutes): string

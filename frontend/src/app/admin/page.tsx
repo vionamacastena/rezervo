@@ -3,21 +3,15 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
+  ArrowRight,
   Building2,
   Users,
   CalendarCheck,
-  DollarSign,
   TrendingUp,
-  Activity,
-  ArrowRight,
-  Crown,
 } from "lucide-react";
 
 import { apiClient } from "@/lib/api/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/api/utils";
 
 interface PlatformStats {
@@ -42,251 +36,188 @@ export default function AdminOverviewPage() {
 
   const kpis = [
     {
-      label: "Biznese Totale",
+      label: "Biznese",
       value: data?.total_tenants ?? 0,
       sub: `${data?.active_tenants ?? 0} aktive`,
       icon: Building2,
-      gradient: "from-blue-500 to-blue-600",
+      accent: "text-blue-600",
+      bg: "bg-blue-50",
     },
     {
       label: "Përdorues",
       value: data?.total_users ?? 0,
-      sub: "në të gjitha bizneset",
+      sub: "gjithsej",
       icon: Users,
-      gradient: "from-purple-500 to-purple-600",
+      accent: "text-violet-600",
+      bg: "bg-violet-50",
     },
     {
-      label: "Rezervime Totale",
+      label: "Rezervime",
       value: data?.total_reservations ?? 0,
       sub: "gjithsej",
       icon: CalendarCheck,
-      gradient: "from-emerald-500 to-emerald-600",
+      accent: "text-emerald-600",
+      bg: "bg-emerald-50",
     },
     {
-      label: "Të Ardhura këtë Muaj",
+      label: "Të ardhura (muaj)",
       value: formatCurrency(data?.revenue_month ?? 0),
       sub: `Total: ${formatCurrency(data?.total_revenue ?? 0)}`,
-      icon: DollarSign,
-      gradient: "from-orange-500 to-orange-600",
+      icon: TrendingUp,
+      accent: "text-amber-600",
+      bg: "bg-amber-50",
     },
   ];
 
+  const statusList = [
+    { key: "draft", label: "Draft", color: "bg-slate-400" },
+    { key: "tentative", label: "Tentativ", color: "bg-slate-500" },
+    { key: "confirmed", label: "Konfirmuar", color: "bg-slate-700" },
+    { key: "completed", label: "Përfunduar", color: "bg-slate-900" },
+    { key: "cancelled", label: "Anuluar", color: "bg-slate-300" },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
-        {" "}
         <div>
-          <div className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-semibold mb-2">
-            <Crown className="w-3 h-3" /> Platform Overview
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Mirë se vini, Super Admin
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+            Overview
           </h1>
-          <p className="text-slate-500 mt-1">
-            Përmbledhje e plotë e platformës Rezervo
+          <p className="text-sm text-slate-500 mt-1">
+            Përmbledhje e platformës
           </p>
         </div>
-        <Link href="/admin/tenants" className="shrink-0">
-          <Button className="gap-2 bg-orange-600 hover:bg-orange-700">
-            <Building2 className="w-4 h-4" /> Menaxho Bizneset
-          </Button>
+        <Link
+          href="/admin/tenants"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors group"
+        >
+          Menaxho bizneset
+          <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {kpis.map((k, i) => {
           const Icon = k.icon;
           return (
-            <Card
+            <div
               key={i}
-              className="border-slate-200 hover:shadow-md transition-shadow"
+              className="border border-slate-200 rounded-lg p-4 bg-white hover:border-slate-300 hover:shadow-sm transition-all duration-150"
             >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-500">
-                      {k.label}
-                    </p>
-                    {isLoading ? (
-                      <Skeleton className="h-9 w-24 mt-2" />
-                    ) : (
-                      <p className="text-3xl font-bold tracking-tight mt-2">
-                        {k.value}
-                      </p>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1">{k.sub}</p>
-                  </div>
-                  <div
-                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${k.gradient} flex items-center justify-center shadow-sm`}
-                  >
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-xs text-slate-500">{k.label}</p>
+                <div className={`w-7 h-7 rounded-md ${k.bg} flex items-center justify-center`}>
+                  <Icon className={`w-3.5 h-3.5 ${k.accent}`} />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              {isLoading ? (
+                <Skeleton className="h-7 w-20" />
+              ) : (
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+                  {k.value}
+                </p>
+              )}
+              <p className="text-xs text-slate-400 mt-1">{k.sub}</p>
+            </div>
           );
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Top Tenants */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
-              Top Bizneset
-            </CardTitle>
+      {/* Two columns */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Top Bizneset */}
+        <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-slate-900">Top Bizneset</h2>
             <Link
               href="/admin/tenants"
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs text-slate-500 hover:text-slate-900 transition-colors"
             >
-              Shiko të gjitha →
+              Të gjitha
             </Link>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
-                ))}
-              </div>
-            ) : data?.top_tenants?.length ? (
-              <div className="space-y-3">
-                {data.top_tenants.map((t, i) => (
-                  <Link
-                    key={t.id}
-                    href={`/admin/tenants/${t.id}`}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                      #{i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">
-                        {t.name}
-                      </div>
-                      <div className="text-xs text-slate-500">{t.slug}</div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="font-bold text-sm text-emerald-600">
-                        {formatCurrency(t.revenue || 0)}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {t.reservations_count || 0} rez.
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-400 text-sm">
-                Nuk ka biznese
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Status Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
-              Rezervime sipas Statusit
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {[
-                  { key: "draft", label: "Draft", color: "bg-slate-400" },
-                  {
-                    key: "tentative",
-                    label: "Tentativ",
-                    color: "bg-yellow-400",
-                  },
-                  {
-                    key: "confirmed",
-                    label: "Konfirmuar",
-                    color: "bg-blue-500",
-                  },
-                  {
-                    key: "completed",
-                    label: "Përfunduar",
-                    color: "bg-emerald-500",
-                  },
-                  { key: "cancelled", label: "Anuluar", color: "bg-red-500" },
-                ].map((s) => {
-                  const count = data?.reservations_by_status?.[s.key] ?? 0;
-                  const total = data?.total_reservations ?? 1;
-                  const pct = total > 0 ? (count / total) * 100 : 0;
-                  return (
-                    <div key={s.key} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{s.label}</span>
-                        <span className="text-slate-500">
-                          {count} ({pct.toFixed(1)}%)
-                        </span>
-                      </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${s.color} rounded-full transition-all`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card className="border-slate-200">
-        <CardHeader>
-          <CardTitle className="text-lg">Veprime të Shpejta</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
-          <Link href="/admin/tenants">
-            <div className="p-4 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
-              <Building2 className="w-6 h-6 text-blue-600 mb-2" />
-              <div className="font-medium text-sm">Lista e Bizneseve</div>
-              <div className="text-xs text-slate-500 mt-1">
-                {data?.total_tenants ?? 0} biznese
-              </div>
-            </div>
-          </Link>
-          <Link href="/dashboard">
-            <div className="p-4 rounded-lg border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/50 transition-all cursor-pointer">
-              <CalendarCheck className="w-6 h-6 text-emerald-600 mb-2" />
-              <div className="font-medium text-sm">Paneli i Demos</div>
-              <div className="text-xs text-slate-500 mt-1">
-                Shko në Rezervo Demo
-              </div>
-            </div>
-          </Link>
-          <div
-            onClick={() =>
-              window.open("http://localhost:3000/book/demo", "_blank")
-            }
-            className="p-4 rounded-lg border border-slate-200 hover:border-purple-400 hover:bg-purple-50/50 transition-all cursor-pointer"
-          >
-            <Activity className="w-6 h-6 text-purple-600 mb-2" />
-            <div className="font-medium text-sm">Public Booking</div>
-            <div className="text-xs text-slate-500 mt-1">
-              Testo wizard-in publik
-            </div>
           </div>
-        </CardContent>
-      </Card>
+
+          {isLoading ? (
+            <div className="p-5 space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : data?.top_tenants?.length ? (
+            <div className="divide-y divide-slate-50">
+              {data.top_tenants.map((t, i) => (
+                <Link
+                  key={t.id}
+                  href={`/admin/tenants/${t.id}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors group"
+                >
+                  <span className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-500 shrink-0 group-hover:bg-slate-200 transition-colors">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate">
+                      {t.name}
+                    </div>
+                    <div className="text-xs text-slate-400 truncate font-mono">
+                      {t.slug}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-medium text-slate-900">
+                      {formatCurrency(t.revenue || 0)}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {t.reservations_count || 0} rez.
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 text-center text-sm text-slate-400">
+              Nuk ka biznese
+            </div>
+          )}
+        </div>
+
+        {/* Statuset */}
+        <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100">
+            <h2 className="text-sm font-medium text-slate-900">
+              Rezervime sipas statusit
+            </h2>
+          </div>
+          <div className="p-5 space-y-4">
+            {statusList.map((s) => {
+              const count = data?.reservations_by_status?.[s.key] ?? 0;
+              const total = data?.total_reservations ?? 1;
+              const pct = total > 0 ? (count / total) * 100 : 0;
+              return (
+                <div key={s.key}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-slate-600">{s.label}</span>
+                    <span className="text-xs text-slate-400 tabular-nums">
+                      {count}{" "}
+                      <span className="text-slate-300">
+                        ({pct.toFixed(0)}%)
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${s.color} rounded-full transition-all duration-500`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

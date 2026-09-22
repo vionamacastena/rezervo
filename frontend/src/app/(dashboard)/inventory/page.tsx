@@ -2,33 +2,19 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/api/utils";
 
@@ -59,25 +45,12 @@ export default function InventoryPage() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: "",
-      sku: "",
-      category: "",
-      quantity: 0,
-      min_threshold: 0,
-      unit: "piece",
-      unit_price: 0,
-    },
+    defaultValues: { name: "", sku: "", category: "", quantity: 0, min_threshold: 0, unit: "piece", unit_price: 0 },
   });
 
   const mutation = useMutation({
-    mutationFn: async (d: FormData) => {
-      if (editing) {
-        await apiClient.put(`/inventory/${editing.id}`, d);
-      } else {
-        await apiClient.post("/inventory", d);
-      }
-    },
+    mutationFn: (d: FormData) =>
+      editing ? apiClient.put(`/inventory/${editing.id}`, d) : apiClient.post("/inventory", d),
     onSuccess: () => {
       toast.success(editing ? "U përditësua" : "U shtua");
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
@@ -89,9 +62,7 @@ export default function InventoryPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiClient.delete(`/inventory/${id}`);
-    },
+    mutationFn: (id: number) => apiClient.delete(`/inventory/${id}`),
     onSuccess: () => {
       toast.success("U fshi");
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
@@ -100,187 +71,110 @@ export default function InventoryPage() {
 
   const openNew = () => {
     setEditing(null);
-    form.reset({
-      name: "",
-      sku: "",
-      category: "",
-      quantity: 0,
-      min_threshold: 0,
-      unit: "piece",
-      unit_price: 0,
-    });
+    form.reset({ name: "", sku: "", category: "", quantity: 0, min_threshold: 0, unit: "piece", unit_price: 0 });
     setDialogOpen(true);
   };
 
   const openEdit = (i: any) => {
     setEditing(i);
     form.reset({
-      name: i.name,
-      sku: i.sku ?? "",
-      category: i.category ?? "",
-      quantity: i.quantity,
-      min_threshold: i.min_threshold,
-      unit: i.unit,
-      unit_price: i.unit_price ?? 0,
+      name: i.name, sku: i.sku ?? "", category: i.category ?? "",
+      quantity: i.quantity, min_threshold: i.min_threshold,
+      unit: i.unit, unit_price: i.unit_price ?? 0,
     });
     setDialogOpen(true);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Inventar</h1>
-          <p className="text-muted-foreground mt-1">Menaxho stokun</p>
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Inventar</h1>
+          <p className="text-sm text-slate-500 mt-1">Menaxho stokun</p>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="w-4 h-4 mr-2" /> Shto artikull
+        <Button onClick={openNew} className="bg-slate-900 hover:bg-slate-800 gap-2 h-9" size="sm">
+          <Plus className="w-3.5 h-3.5" /> Shto artikull
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          {isLoading ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+      <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        ) : data?.data?.length ? (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-left">
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Emri</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500">Kategoria</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500 text-right">Sasia</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500 text-right">Min</th>
+                <th className="px-5 py-3 text-xs font-medium text-slate-500 text-right">Vlera</th>
+                <th className="w-20"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.data.map((i: any) => (
+                <tr key={i.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-900">{i.name}</span>
+                      {i.is_low_stock && (
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-slate-600">{i.category || "—"}</td>
+                  <td className="px-5 py-3 text-right tabular-nums">
+                    <span className={i.is_low_stock ? "text-amber-600 font-medium" : "text-slate-600"}>
+                      {i.quantity} {i.unit}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right text-slate-500 tabular-nums">{i.min_threshold}</td>
+                  <td className="px-5 py-3 text-right text-slate-600 tabular-nums">
+                    {i.total_value ? formatCurrency(i.total_value) : "—"}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <div className="inline-flex gap-0.5">
+                      <button onClick={() => openEdit(i)} className="w-7 h-7 rounded-md hover:bg-slate-100 inline-flex items-center justify-center text-slate-500 hover:text-slate-900">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => confirm("Fshij?") && deleteMutation.mutate(i.id)} className="w-7 h-7 rounded-md hover:bg-slate-100 inline-flex items-center justify-center text-slate-500 hover:text-red-600">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Emri</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Kategoria</TableHead>
-                  <TableHead className="text-right">Sasia</TableHead>
-                  <TableHead className="text-right">Min</TableHead>
-                  <TableHead className="text-right">Vlera</TableHead>
-                  <TableHead className="text-right">Veprime</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.data?.length ? (
-                  data.data.map((i: any) => (
-                    <TableRow key={i.id}>
-                      <TableCell className="font-medium flex items-center gap-2">
-                        {i.name}
-                        {i.is_low_stock && (
-                          <AlertTriangle className="w-4 h-4 text-orange-500" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {i.sku || "—"}
-                      </TableCell>
-                      <TableCell>{i.category || "—"}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge
-                          variant={i.is_low_stock ? "destructive" : "secondary"}
-                        >
-                          {i.quantity} {i.unit}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {i.min_threshold}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {i.total_value ? formatCurrency(i.total_value) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEdit(i)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            confirm("Fshij?") && deleteMutation.mutate(i.id)
-                          }
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      Nuk ka artikuj
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+            </tbody>
+          </table>
+        ) : (
+          <div className="py-16 text-center text-sm text-slate-500">Nuk ka artikuj</div>
+        )}
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editing ? "Ndrysho artikullin" : "Shto artikull"}
-            </DialogTitle>
+            <DialogTitle>{editing ? "Ndrysho artikullin" : "Shto artikull"}</DialogTitle>
           </DialogHeader>
-          <form
-            onSubmit={form.handleSubmit((d) => mutation.mutate(d))}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label>Emri *</Label>
-              <Input {...form.register("name")} />
+          <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+            <div className="space-y-2"><Label>Emri *</Label><Input {...form.register("name")} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2"><Label>SKU</Label><Input {...form.register("sku")} /></div>
+              <div className="space-y-2"><Label>Kategoria</Label><Input {...form.register("category")} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>SKU</Label>
-                <Input {...form.register("sku")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Kategoria</Label>
-                <Input {...form.register("category")} />
-              </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2"><Label>Sasia *</Label><Input type="number" {...form.register("quantity")} /></div>
+              <div className="space-y-2"><Label>Min *</Label><Input type="number" {...form.register("min_threshold")} /></div>
+              <div className="space-y-2"><Label>Njësia *</Label><Input {...form.register("unit")} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Sasia *</Label>
-                <Input type="number" {...form.register("quantity")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Pragu min *</Label>
-                <Input type="number" {...form.register("min_threshold")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Njësia *</Label>
-                <Input {...form.register("unit")} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Çmimi/njësi (€)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                {...form.register("unit_price")}
-              />
-            </div>
+            <div className="space-y-2"><Label>Çmimi/njësi (€)</Label><Input type="number" step="0.01" {...form.register("unit_price")} /></div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                Anulo
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="sm">Anulo</Button>
+              <Button type="submit" disabled={mutation.isPending} size="sm" className="bg-slate-900">
+                {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Ruaj
               </Button>
             </DialogFooter>
