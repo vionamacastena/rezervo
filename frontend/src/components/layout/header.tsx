@@ -36,7 +36,7 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 border-b bg-white flex items-center justify-between px-6 sticky top-0 z-10">
+    <header className="h-16 border-b bg-white flex items-center justify-between px-6 shrink-0">
       <div className="flex items-center gap-4 flex-1 max-w-md">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -54,24 +54,26 @@ export function Header() {
 
         <div className="w-px h-8 bg-slate-200" />
 
+        {/* DropdownMenuTrigger NUK ka asChild — stilet direkt */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-3 h-12 px-2">
-              <Avatar className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600">
-                <AvatarFallback className="bg-transparent text-white font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden md:flex flex-col items-start">
-                <span className="text-sm font-semibold text-slate-900">
-                  {user?.name}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {user?.tenant?.name || "Rezervo"}
-                </span>
-              </div>
-            </Button>
+          <DropdownMenuTrigger
+            className="inline-flex items-center gap-3 h-12 px-2 rounded-md hover:bg-slate-100 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-slate-300 cursor-pointer"
+          >
+            <Avatar className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600">
+              <AvatarFallback className="bg-transparent text-white font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden md:flex flex-col items-start">
+              <span className="text-sm font-semibold text-slate-900">
+                {user?.name}
+              </span>
+              <span className="text-xs text-slate-500">
+                {user?.tenant?.name || "Rezervo"}
+              </span>
+            </div>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent align="end" className="w-60">
             <DropdownMenuLabel>
               <div className="flex flex-col">

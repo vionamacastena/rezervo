@@ -18,18 +18,19 @@ class EnsureTenantContext
             ], 401);
         }
 
-        // Super Admin mund të aksesojë çdo tenant
+        // SuperAdmin: pa tenant_id → OK për admin routes
         if ($user->hasRole('super_admin')) {
             $tenantId = $request->header('X-Tenant-Id') ?? $user->tenant_id;
-            if (! $tenantId) {
-                return response()->json([
-                    'message' => 'Tenant context required.',
-                ], 400);
+
+            if ($tenantId) {
+                app()->instance('tenant_id', (int) $tenantId);
             }
-            app()->instance('tenant_id', (int) $tenantId);
+            // Nëse s'ka tenant_id, mos e vendos fare — admin routes nuk kanë nevojë
+
             return $next($request);
         }
 
+        // User normal: kërko tenant_id
         if (! $user->tenant_id) {
             return response()->json([
                 'message' => 'No tenant assigned to user.',

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
+import { SuperAdminSidebar } from "@/components/layout/superadmin-sidebar";
 import { Header } from "@/components/layout/header";
 import { useAuthStore } from "@/lib/store/auth";
 import { hasAuthCookie } from "@/lib/auth-cookie";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 
-export default function DashboardLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -22,13 +22,12 @@ export default function DashboardLayout({
 
   useEffect(() => {
     setMounted(true);
-
-    if (!hasAuthCookie()) {
+    const hasCookie = hasAuthCookie();
+    if (!hasCookie) {
       setAuthorized(false);
       window.location.replace("/login");
       return;
     }
-
     hydrateFromStorage();
     setAuthorized(true);
   }, [hydrateFromStorage]);
@@ -38,18 +37,6 @@ export default function DashboardLayout({
       fetchMe();
     }
   }, [mounted, authorized, token, user, fetchMe]);
-
-  // Redirect super_admin pa tenant → /admin
-  useEffect(() => {
-    if (user) {
-      const isSuperAdmin = user.roles?.some((r) => r.name === "super_admin");
-      const hasTenant = !!user.tenant_id;
-
-      if (isSuperAdmin && !hasTenant) {
-        window.location.replace("/admin");
-      }
-    }
-  }, [user]);
 
   if (!mounted || authorized === null || !authorized) {
     return (
@@ -67,9 +54,33 @@ export default function DashboardLayout({
     );
   }
 
+  const isSuperAdmin = user?.roles?.some((r) => r.name === "super_admin");
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+            <ShieldAlert className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Akses i ndaluar</h1>
+          <p className="text-slate-500">
+            Ky panel është vetëm për Super Admin. Ju nuk keni akses.
+          </p>
+          <a
+            href="/dashboard"
+            className="inline-block px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800"
+          >
+            Kthehu në panelin e biznesit
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <Sidebar />
+      <SuperAdminSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
