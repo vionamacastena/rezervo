@@ -1,9 +1,56 @@
+# Node / Next.js
 node_modules/
 .next/
 out/
+build/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Laravel
 backend/vendor/
 backend/storage/*.key
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/logs/*
 backend/.env
+backend/.phpunit.result.cache
+backend/bootstrap/cache/*.php
+backend/public/storage
+backend/public/hot
+
+# Environment
 .env
 .env.local
+.env.*.local
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Docker
+docker/mysql/data/
+
+# Logs
+*.log
+
+# Tests
+coverage/
+.nyc_output/
+
+# Temporary
+*.tmp
+.cache/
+
+# Rezervo custom scripts
+.api-test.sh
+.test-*.sh
