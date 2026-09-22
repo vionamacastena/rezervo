@@ -4,30 +4,36 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\ReservationController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\StaffMemberController;
+use App\Http\Controllers\Api\InventoryItemController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\PublicBookingController;
 
 Route::prefix('v1')->group(function () {
 
-    // Public
+    // ─── Public Booking (pa auth) ───
+    Route::prefix('public/{slug}')->group(function () {
+        Route::get('/', [PublicBookingController::class, 'show']);
+        Route::get('/availability', [PublicBookingController::class, 'availability']);
+        Route::post('/book', [PublicBookingController::class, 'book']);
+    });
+
+    // ─── Login ───
     Route::post('/auth/login', [AuthController::class, 'login']);
 
-    // Protected
+    // ─── Protected ───
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
-
-        // Auth
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me', [AuthController::class, 'me']);
 
-        // Health
-        Route::get('/health', fn() => response()->json([
+        Route::get('/health', fn () => response()->json([
             'status' => 'ok',
             'tenant_id' => app('tenant_id'),
             'user' => auth()->user()->only(['id', 'name', 'email']),
         ]));
 
-        // Clients
         Route::apiResource('clients', ClientController::class);
-
-        // Reservations
         Route::apiResource('reservations', ReservationController::class);
         Route::post('reservations/{reservation}/confirm', [ReservationController::class, 'confirm']);
         Route::post('reservations/{reservation}/tentative', [ReservationController::class, 'tentative']);
@@ -35,24 +41,18 @@ Route::prefix('v1')->group(function () {
         Route::post('reservations/{reservation}/cancel', [ReservationController::class, 'cancel']);
         Route::post('reservations/{reservation}/duplicate', [ReservationController::class, 'duplicate']);
 
-        // Payments
-        Route::apiResource('payments', \App\Http\Controllers\Api\PaymentController::class);
+        Route::apiResource('payments', PaymentController::class);
+        Route::apiResource('staff', StaffMemberController::class);
+        Route::apiResource('inventory', InventoryItemController::class);
+        Route::post('inventory/{inventory}/adjust-stock', [InventoryItemController::class, 'adjustStock']);
 
-        // Staff
-        Route::apiResource('staff', \App\Http\Controllers\Api\StaffMemberController::class);
-
-        // Inventory
-        Route::apiResource('inventory', \App\Http\Controllers\Api\InventoryItemController::class);
-        Route::post('inventory/{inventory}/adjust-stock', [\App\Http\Controllers\Api\InventoryItemController::class, 'adjustStock']);
-
-        // Reports
         Route::prefix('reports')->group(function () {
-            Route::get('dashboard', [\App\Http\Controllers\Api\ReportController::class, 'dashboard']);
-            Route::get('revenue', [\App\Http\Controllers\Api\ReportController::class, 'revenue']);
-            Route::get('outstanding', [\App\Http\Controllers\Api\ReportController::class, 'outstanding']);
-            Route::get('occupancy', [\App\Http\Controllers\Api\ReportController::class, 'occupancy']);
-            Route::get('staff-utilization', [\App\Http\Controllers\Api\ReportController::class, 'staffUtilization']);
-            Route::get('inventory-status', [\App\Http\Controllers\Api\ReportController::class, 'inventoryStatus']);
+            Route::get('dashboard', [ReportController::class, 'dashboard']);
+            Route::get('revenue', [ReportController::class, 'revenue']);
+            Route::get('outstanding', [ReportController::class, 'outstanding']);
+            Route::get('occupancy', [ReportController::class, 'occupancy']);
+            Route::get('staff-utilization', [ReportController::class, 'staffUtilization']);
+            Route::get('inventory-status', [ReportController::class, 'inventoryStatus']);
         });
     });
 });

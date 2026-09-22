@@ -49,6 +49,10 @@ class Tenant extends Model
     {
         return $this->hasMany(StaffMember::class);
     }
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
     public function inventoryItems()
     {
         return $this->hasMany(InventoryItem::class);

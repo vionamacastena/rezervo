@@ -14,6 +14,7 @@ class Reservation extends Model
     protected $fillable = [
         'tenant_id',
         'client_id',
+        'service_id',
         'created_by',
         'code',
         'status',
@@ -43,14 +44,22 @@ class Reservation extends Model
     {
         return $this->belongsTo(Tenant::class);
     }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
     }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);
