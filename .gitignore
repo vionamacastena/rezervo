@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+backend/vendor/
+backend/storage/*.key
+backend/.env
+.env
+.env.local
+.DS_Store
