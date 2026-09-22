@@ -54,3 +54,7 @@ coverage/
 # Rezervo custom scripts
 .api-test.sh
 .test-*.sh
+
+# Local test scripts
+.api-test.sh
+.test-*.sh
