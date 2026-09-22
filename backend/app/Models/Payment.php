@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Support\Str;
 
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory,  BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
@@ -31,6 +33,11 @@ class Payment extends Model
         'is_deletable' => 'boolean',
     ];
 
+    protected $attributes = [
+        'is_deletable' => true,
+        'currency' => 'EUR',
+    ];
+
     protected static function booted(): void
     {
         static::creating(function (Payment $payment) {
@@ -39,6 +46,8 @@ class Payment extends Model
             }
         });
     }
+
+
 
     public function tenant()
     {
