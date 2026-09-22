@@ -1,32 +1,66 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { useAuthStore } from "@/lib/store/auth";
+import { hasAuthCookie } from "@/lib/auth-cookie";
+import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { token, fetchMe, user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const fetchMe = useAuthStore((s) => s.fetchMe);
+  const hydrateFromStorage = useAuthStore((s) => s.hydrateFromStorage);
+
+  const [mounted, setMounted] = useState(false);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      router.replace("/login");
+    setMounted(true);
+
+    // Lexo cookie sinkronikisht (bulletproof — pa race)
+    const hasCookie = hasAuthCookie();
+
+    if (!hasCookie) {
+      setAuthorized(false);
+      window.location.replace("/login");
       return;
     }
-    if (!user) {
+
+    // Hidrato state nga localStorage
+    hydrateFromStorage();
+
+    setAuthorized(true);
+  }, [hydrateFromStorage]);
+
+  // Pas hidratimit, nëse token ekziston por user jo, bëj fetchMe
+  useEffect(() => {
+    if (mounted && authorized && token && !user) {
       fetchMe();
     }
-  }, [token, user, fetchMe, router, pathname]);
+  }, [mounted, authorized, token, user, fetchMe]);
 
-  if (!token) {
-    return null;
+  // Gjatë hidratimit ose pa autorizim → spinner
+  if (!mounted || authorized === null || !authorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  // Nëse user-i është duke u ngarkuar
+  if (token && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      </div>
+    );
   }
 
   return (
