@@ -29,7 +29,7 @@ class PublicBookingController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
-            ->map(fn ($s) => [
+            ->map(fn($s) => [
                 'id' => $s->id,
                 'name' => $s->name,
                 'description' => $s->description,
@@ -93,6 +93,19 @@ class PublicBookingController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+        // Kontrollo bllokimet
+        $blocked = \App\Models\BlockedSlot::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('starts_at', '<', $endsAt)
+            ->where('ends_at', '>', $startsAt)
+            ->first();
+
+        if ($blocked) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Ky orar nuk është i disponueshëm.',
+            ], 409);
+        }
 
         $service = Service::withoutGlobalScopes()
             ->where('tenant_id', $tenant->id)
@@ -161,7 +174,7 @@ class PublicBookingController extends Controller
         try {
             $staff = User::where('tenant_id', $tenant->id)
                 ->where('status', 'active')
-                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['owner', 'manager', 'receptionist']))
+                ->whereHas('roles', fn($q) => $q->whereIn('name', ['owner', 'manager', 'receptionist']))
                 ->get();
 
             if ($staff->isNotEmpty()) {

@@ -61,4 +61,8 @@ class Tenant extends Model
     {
         return $this->hasMany(AuditLog::class);
     }
+    public function blockedSlots()
+    {
+        return $this->hasMany(BlockedSlot::class);
+    }
 }

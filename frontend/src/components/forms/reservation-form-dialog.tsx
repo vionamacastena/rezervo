@@ -45,12 +45,14 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reservation?: any;
+  defaultDate?: Date;
 }
 
 export function ReservationFormDialog({
   open,
   onOpenChange,
   reservation,
+  defaultDate,
 }: Props) {
   const queryClient = useQueryClient();
   const isEdit = !!reservation;
@@ -98,22 +100,30 @@ export function ReservationFormDialog({
           total_price: Number(reservation.total_price),
         });
       } else {
-        const now = new Date();
-        now.setHours(now.getHours() + 1, 0, 0, 0);
-        const end = new Date(now);
-        end.setHours(end.getHours() + 2);
+        // Përdor defaultDate nëse ekziston
+        const baseDate = defaultDate ?? new Date();
+        const startsAt = new Date(baseDate);
+        startsAt.setHours(9, 0, 0, 0);
+        const endsAt = new Date(startsAt);
+        endsAt.setHours(startsAt.getHours() + 1);
+
+        const formatLocal = (d: Date) => {
+          const pad = (n: number) => String(n).padStart(2, "0");
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+
         reset({
           client_id: "",
-          starts_at: now.toISOString().slice(0, 16),
-          ends_at: end.toISOString().slice(0, 16),
-          guests_count: 2,
+          starts_at: formatLocal(startsAt),
+          ends_at: formatLocal(endsAt),
+          guests_count: 1,
           resource: "",
           notes: "",
           total_price: 0,
         });
       }
     }
-  }, [open, reservation, reset]);
+  }, [open, reservation, defaultDate, reset]);
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {

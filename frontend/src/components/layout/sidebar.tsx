@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Calendar,
   LayoutDashboard,
   CalendarCheck,
   Users,
@@ -20,6 +21,7 @@ import { useAuthStore } from "@/lib/store/auth";
 const menu = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/reservations", label: "Rezervime", icon: CalendarCheck },
+  { href: "/calendar", label: "Kalendar", icon: Calendar },
   { href: "/clients", label: "Klientë", icon: Users },
   { href: "/payments", label: "Pagesa", icon: DollarSign },
   { href: "/staff", label: "Staf", icon: UserCircle },

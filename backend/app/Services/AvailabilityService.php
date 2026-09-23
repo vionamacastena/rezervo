@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BlockedSlot;
 use App\Models\Reservation;
 use App\Models\Service;
 use Carbon\Carbon;
@@ -28,11 +29,18 @@ class AvailabilityService
         $cursor = $workStart->copy();
         $duration = $service->duration_minutes;
 
+        // Marrim rezervimet ekzistuese
         $existingReservations = Reservation::withoutGlobalScopes()
             ->where('tenant_id', $tenantId)
             ->whereIn('status', ['tentative', 'confirmed'])
             ->whereDate('starts_at', $day)
             ->get(['starts_at', 'ends_at']);
+
+        // Marrim bllokimet
+        $blockedSlots = BlockedSlot::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('starts_at', $day)
+            ->get(['starts_at', 'ends_at', 'reason']);
 
         while ($cursor->copy()->addMinutes($duration)->lte($workEnd)) {
             $slotStart = $cursor->copy();
@@ -46,14 +54,27 @@ class AvailabilityService
                 $reason = 'past';
             }
 
+            // Kontrollo rezervimet
             if ($available) {
                 foreach ($existingReservations as $r) {
                     $rStart = Carbon::parse($r->starts_at);
                     $rEnd = Carbon::parse($r->ends_at);
-
                     if ($slotStart->lt($rEnd) && $slotEnd->gt($rStart)) {
                         $available = false;
                         $reason = 'booked';
+                        break;
+                    }
+                }
+            }
+
+            // Kontrollo bllokimet
+            if ($available) {
+                foreach ($blockedSlots as $b) {
+                    $bStart = Carbon::parse($b->starts_at);
+                    $bEnd = Carbon::parse($b->ends_at);
+                    if ($slotStart->lt($bEnd) && $slotEnd->gt($bStart)) {
+                        $available = false;
+                        $reason = 'blocked';
                         break;
                     }
                 }

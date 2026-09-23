@@ -12,12 +12,36 @@ import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  formatCurrency, formatDate, PAYMENT_METHOD_LABELS,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  formatCurrency,
+  formatDate,
+  PAYMENT_METHOD_LABELS,
 } from "@/lib/api/utils";
 
 const schema = z.object({
@@ -37,7 +61,9 @@ export default function PaymentsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["payments"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/payments", { params: { per_page: 50 } });
+      const { data } = await apiClient.get("/payments", {
+        params: { per_page: 50 },
+      });
       return data.data;
     },
   });
@@ -45,7 +71,9 @@ export default function PaymentsPage() {
   const { data: reservations } = useQuery({
     queryKey: ["reservations-for-payment"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/reservations", { params: { per_page: 200 } });
+      const { data } = await apiClient.get("/reservations", {
+        params: { per_page: 200 },
+      });
       return data.data.data;
     },
   });
@@ -62,8 +90,12 @@ export default function PaymentsPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (d: FormData) =>
-      apiClient.post("/payments", { ...d, reservation_id: Number(d.reservation_id) }),
+    mutationFn: async (d: FormData) => {
+      await apiClient.post("/payments", {
+        ...d,
+        reservation_id: Number(d.reservation_id),
+      });
+    },
     onSuccess: () => {
       toast.success("Pagesa u regjistrua");
       queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -75,7 +107,9 @@ export default function PaymentsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.delete(`/payments/${id}`),
+    mutationFn: async (id: number) => {
+      await apiClient.delete(`/payments/${id}`);
+    },
     onSuccess: () => {
       toast.success("Pagesa u fshi");
       queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -85,104 +119,142 @@ export default function PaymentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Pagesa</h1>
-          <p className="text-sm text-slate-500 mt-1">Regjistro dhe shiko pagesat</p>
+          <h1 className="text-3xl font-bold">Pagesa</h1>
+          <p className="text-muted-foreground mt-1">
+            Regjistro dhe shiko pagesat
+          </p>
         </div>
-        <Button
-          onClick={() => setDialogOpen(true)}
-          className="bg-slate-900 hover:bg-slate-800 gap-2 h-9"
-          size="sm"
-        >
-          <Plus className="w-3.5 h-3.5" /> Pagesë e re
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Pagesë e re
         </Button>
       </div>
 
-      <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
-        {isLoading ? (
-          <div className="p-4 space-y-2">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-          </div>
-        ) : data?.data?.length ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-left">
-                <th className="px-5 py-3 text-xs font-medium text-slate-500">Payment ID</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500">Rezervimi</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500">Data</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500">Metoda</th>
-                <th className="px-5 py-3 text-xs font-medium text-slate-500 text-right">Shuma</th>
-                <th className="w-16"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.data.map((p: any) => (
-                <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                  <td className="px-5 py-3 font-mono text-xs text-slate-500">{p.payment_id}</td>
-                  <td className="px-5 py-3 text-slate-900">{p.reservation?.code ?? "—"}</td>
-                  <td className="px-5 py-3 text-slate-600 text-xs">{formatDate(p.payment_date)}</td>
-                  <td className="px-5 py-3 text-slate-600">{PAYMENT_METHOD_LABELS[p.method]}</td>
-                  <td className="px-5 py-3 text-right font-medium text-slate-900 tabular-nums">
-                    {formatCurrency(p.amount, p.currency)}
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <button
-                      disabled={!p.is_deletable}
-                      onClick={() => deleteMutation.mutate(p.id)}
-                      className="w-7 h-7 rounded-md hover:bg-slate-100 inline-flex items-center justify-center text-slate-500 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent"
-                      title={p.is_deletable ? "Fshij" : "Nuk mund të fshihet (>24h)"}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
+      <Card>
+        <CardContent className="pt-6">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="py-16 text-center text-sm text-slate-500">Nuk ka pagesa</div>
-        )}
-      </div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Payment ID</TableHead>
+                  <TableHead>Rezervimi</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Metoda</TableHead>
+                  <TableHead className="text-right">Shuma</TableHead>
+                  <TableHead className="text-right">Veprime</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data?.data?.length ? (
+                  data.data.map((p: any) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-mono text-xs">
+                        {p.payment_id}
+                      </TableCell>
+                      <TableCell>{p.reservation?.code ?? "—"}</TableCell>
+                      <TableCell>{formatDate(p.payment_date)}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {PAYMENT_METHOD_LABELS[p.method]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(p.amount, p.currency)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={!p.is_deletable}
+                          onClick={() => deleteMutation.mutate(p.id)}
+                          title={
+                            p.is_deletable
+                              ? "Fshij"
+                              : "Nuk mund të fshihet (24h)"
+                          }
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      Nuk ka pagesa
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Regjistro pagesë</DialogTitle>
+            <DialogDescription>Shto pagesën për një rezervim</DialogDescription>
           </DialogHeader>
-          <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit((d) => mutation.mutate(d))}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label>Rezervimi *</Label>
-              <select
-                {...form.register("reservation_id")}
-                className="w-full h-9 px-3 text-sm rounded-md border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              <Select
+                value={form.watch("reservation_id")}
+                onValueChange={(v) => form.setValue("reservation_id", v)}
               >
-                <option value="">Zgjidh...</option>
-                {reservations?.filter((r: any) => !["cancelled"].includes(r.status)).map((r: any) => (
-                  <option key={r.id} value={r.id}>
-                    {r.code} — {r.client?.full_name} ({r.total_price} {r.currency})
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Zgjidh" />
+                </SelectTrigger>
+                <SelectContent>
+                  {reservations
+                    ?.filter((r: any) => !["cancelled"].includes(r.status))
+                    .map((r: any) => (
+                      <SelectItem key={r.id} value={String(r.id)}>
+                        {r.code} — {r.client?.full_name} ({r.total_price}{" "}
+                        {r.currency})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Shuma (€) *</Label>
                 <Input type="number" step="0.01" {...form.register("amount")} />
               </div>
               <div className="space-y-2">
                 <Label>Metoda *</Label>
-                <select
-                  {...form.register("method")}
-                  className="w-full h-9 px-3 text-sm rounded-md border border-slate-200 bg-white"
+                <Select
+                  value={form.watch("method")}
+                  onValueChange={(v: any) => form.setValue("method", v)}
                 >
-                  <option value="cash">Kesh</option>
-                  <option value="card">Kartë</option>
-                  <option value="bank_transfer">Transfert</option>
-                  <option value="online">Online</option>
-                  <option value="other">Tjetër</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Kesh</SelectItem>
+                    <SelectItem value="card">Kartë</SelectItem>
+                    <SelectItem value="bank_transfer">Transfert</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="other">Tjetër</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -192,11 +264,17 @@ export default function PaymentsPage() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} size="sm">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+              >
                 Anulo
               </Button>
-              <Button type="submit" disabled={mutation.isPending} size="sm" className="bg-slate-900">
-                {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Regjistro
               </Button>
             </DialogFooter>
@@ -206,3 +284,4 @@ export default function PaymentsPage() {
     </div>
   );
 }
+

@@ -95,5 +95,11 @@ Route::prefix('v1')->group(function () {
         Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
         Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
         Route::delete('notifications/{id}', [NotificationController::class, 'destroy']);
+
+
+        // Blocked slots
+        Route::get('blocked-slots', [\App\Http\Controllers\Api\BlockedSlotController::class, 'index']);
+        Route::post('blocked-slots', [\App\Http\Controllers\Api\BlockedSlotController::class, 'store']);
+        Route::delete('blocked-slots/{blockedSlot}', [\App\Http\Controllers\Api\BlockedSlotController::class, 'destroy']);
     });
 });
